@@ -29,15 +29,16 @@ export default async function DashboardPage() {
     const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single()
     const isAdmin = profile?.role === 'admin' || profile?.role === 'manager'
 
-    const { data: clients } = await supabase.from('portal_clients').select('*')
-      .eq(isAdmin ? 'id' : 'user_id', isAdmin ? clients?.[0]?.id || '' : user.id)
-      .order('created_at', { ascending: false })
-
-    // For non-admin: get their clients
-    const { data: myClients } = isAdmin ? { data: [] } : await supabase
-      .from('portal_clients').select('*').eq('user_id', user.id).order('created_at', { ascending: false })
-
-    const allClients = isAdmin ? (clients || []) : (myClients || [])
+    let allClients: any[] = []
+    if (isAdmin) {
+      const { data } = await supabase
+        .from('portal_clients').select('*').order('created_at', { ascending: false })
+      allClients = data || []
+    } else {
+      const { data } = await supabase
+        .from('portal_clients').select('*').eq('user_id', user.id).order('created_at', { ascending: false })
+      allClients = data || []
+    }
 
     // Get tasks for all clients
     const clientIds = allClients.map((c: any) => c.id)
